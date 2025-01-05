@@ -13,12 +13,7 @@ struct PhoneBackground: View {
     @Binding var counter: Int
     
     private var scrimOpacity: Double {
-        switch state {
-        case .none:
-            0
-        case .thinking:
-            0.8
-        }
+        return 0 // Always transparent
     }
     
     private var iconName: String {
@@ -32,7 +27,7 @@ struct PhoneBackground: View {
 
     var body: some View {
         ZStack {
-            Image("Background", bundle: .main)
+            Image("quiz-background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .scaleEffect(1.2) // avoids clipping
@@ -43,57 +38,60 @@ struct PhoneBackground: View {
                 .opacity(scrimOpacity)
                 .scaleEffect(1.2) // avoids clipping
             
-            VStack {
+            VStack(spacing: 32) {
+                Spacer()
+                
                 welcomeText
+                    .frame(maxHeight: .infinity, alignment: .bottom)
                 
                 siriButtonView
+                
+                Spacer()
+                    .frame(height: 100)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .onPressingChanged { point in
-                if let point {
-                    origin = point
-                    counter += 1
-                }
-            }
-            .padding(.bottom, 64)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
     @ViewBuilder
     private var welcomeText: some View {
-        if state == .thinking {
-            Text("What are you looking for?")
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: 240, maxHeight: .infinity, alignment: .center)
-                .multilineTextAlignment(.center)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .animation(.easeInOut(duration: 0.2), value: state)
-                .contentTransition(.opacity)
-        }
+        Text("Where is the Eiffel Tower located?")
+            .foregroundStyle(Color.white)
+            .frame(maxWidth: 240)
+            .multilineTextAlignment(.center)
+            .font(.largeTitle)
+            .fontWeight(.bold)
+            .animation(.easeInOut(duration: 0.2), value: state)
+            .contentTransition(.opacity)
     }
     
     private var siriButtonView: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.9)) {
-                switch state {
-                case .none:
-                    state = .thinking
-                case .thinking:
-                    state = .none
+        VStack(spacing: 12) {
+            ForEach(["Paris, France", "London, UK", "New York, USA", "Tokyo, Japan"], id: \.self) { answer in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.9)) {
+                        switch state {
+                        case .none:
+                            state = .thinking
+                        case .thinking:
+                            state = .none
+                        }
+                    }
+                } label: {
+                    Text(answer)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 64)
+                        .foregroundStyle(Color.white)
+                        .font(.system(size: 20, weight: .semibold))
+                        .background(
+                            RoundedRectangle(cornerRadius: 16.0, style: .continuous)
+                                .fill(Color.gray.opacity(0.2))
+                        )
                 }
+                .buttonStyle(.plain) // This removes the default button press animation
             }
-        } label: {
-            Image(systemName: iconName)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 96, height: 96)
-                .foregroundStyle(Color.white)
-                .font(.system(size: 32, weight: .bold, design: .monospaced))
-                .background(
-                    RoundedRectangle(cornerRadius: 32.0, style: .continuous)
-                        .fill(Color.gray.opacity(0.1))
-                )
         }
+        .padding(.horizontal, 24)
     }
 }
 
