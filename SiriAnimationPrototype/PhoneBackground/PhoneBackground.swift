@@ -11,10 +11,18 @@ struct PhoneBackground: View {
     @Binding var state: ContentView.SiriState
     @Binding var origin: CGPoint
     @Binding var counter: Int
+    @State private var selectedAnswer: String?
     
     private var scrimOpacity: Double {
         return 0 // Always transparent
     }
+    
+    private let answers = [
+        ("Paris, France", true),
+        ("London, UK", false),
+        ("New York, USA", false),
+        ("Tokyo, Japan", false)
+    ]
     
     private var iconName: String {
         switch state {
@@ -30,68 +38,132 @@ struct PhoneBackground: View {
             Image("quiz-background")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .scaleEffect(1.2) // avoids clipping
+                .scaleEffect(1.2)
                 .ignoresSafeArea()
             
-            Rectangle()
-                .fill(Color.black)
-                .opacity(scrimOpacity)
-                .scaleEffect(1.2) // avoids clipping
-            
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
+                // Header
+                HStack {
+                    Button(action: {}) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(.white)
+                            .font(.system(size: 24, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: 44)
+                    
+                    Text("Quiz Title")
+                        .foregroundStyle(.white)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .foregroundStyle(.red)
+                        Text("25")
+                            .foregroundStyle(.white)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(width: 44, alignment: .trailing)
+                }
+                .padding(.horizontal)
+                .padding(.top, 60)
+                
+                VStack(spacing: 20) {
+                    // Question bubble
+                    welcomeText
+                    
+                    // Answer buttons
+                    siriButtonView
+                }
+                .padding(.top, 32)
+                
                 Spacer()
                 
-                welcomeText
-                    .frame(maxHeight: .infinity, alignment: .bottom)
-                
-                siriButtonView
-                
-                Spacer()
-                    .frame(height: 100)
+                // Reset button
+                if selectedAnswer != nil {
+                    Button {
+                        withAnimation {
+                            selectedAnswer = nil
+                            state = .none
+                        }
+                    } label: {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 40)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
     @ViewBuilder
     private var welcomeText: some View {
         Text("Where is the Eiffel Tower located?")
-            .foregroundStyle(Color.white)
-            .frame(maxWidth: 240)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)
-            .font(.largeTitle)
-            .fontWeight(.bold)
-            .animation(.easeInOut(duration: 0.2), value: state)
-            .contentTransition(.opacity)
+            .font(.title2)
+            .fontWeight(.semibold)
+            .padding(.vertical, 24)
+            .padding(.horizontal, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.ultraThinMaterial)
+            )
+            .padding(.horizontal, 24)
     }
     
     private var siriButtonView: some View {
         VStack(spacing: 12) {
-            ForEach(["Paris, France", "London, UK", "New York, USA", "Tokyo, Japan"], id: \.self) { answer in
+            ForEach(answers, id: \.0) { answer, isCorrect in
                 Button {
-                    withAnimation(.easeInOut(duration: 0.9)) {
-                        switch state {
-                        case .none:
+                    selectedAnswer = answer
+                    if isCorrect {
+                        withAnimation(.easeInOut(duration: 0.9)) {
                             state = .thinking
-                        case .thinking:
-                            state = .none
                         }
                     }
                 } label: {
                     Text(answer)
                         .frame(maxWidth: .infinity)
                         .frame(height: 64)
-                        .foregroundStyle(Color.white)
-                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .font(.title3)
+                        .fontWeight(.medium)
                         .background(
                             RoundedRectangle(cornerRadius: 16.0, style: .continuous)
-                                .fill(Color.gray.opacity(0.2))
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16.0, style: .continuous)
+                                        .fill(buttonColor(for: answer))
+                                )
                         )
                 }
-                .buttonStyle(.plain) // This removes the default button press animation
+                .buttonStyle(.plain)
+                .disabled(selectedAnswer != nil)
             }
         }
         .padding(.horizontal, 24)
+    }
+    
+    private func buttonColor(for answer: String) -> AnyShapeStyle {
+        guard let selectedAnswer = selectedAnswer else {
+            return AnyShapeStyle(.ultraThinMaterial)
+        }
+        
+        if answer == selectedAnswer {
+            if answers.first(where: { $0.0 == answer })?.1 == true {
+                return AnyShapeStyle(.green)
+            } else {
+                return AnyShapeStyle(.red)
+            }
+        }
+        
+        return AnyShapeStyle(.ultraThinMaterial)
     }
 }
 
@@ -101,5 +173,4 @@ struct PhoneBackground: View {
         origin: .constant(CGPoint(x: 0.5, y: 0.5)),
         counter: .constant(0)
     )
-    .previewLayout(.sizeThatFits)
 }
